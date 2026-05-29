@@ -8,5 +8,5 @@ export interface PetAvailabilityEvent {
   source: "adoption" | "custody" | "computed";
   reason: string;
   timestamp: string;
-  //
+  
 }
