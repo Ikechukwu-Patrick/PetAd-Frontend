@@ -15,7 +15,7 @@ const MAX_FILES = 5;
 
 export function RaiseDisputeModal({ isOpen, onClose, adoptionId, raisedBy }: Props) {
   const [reason, setReason] = useState("");
-  const [files, setFiles] = useState<Array<File | null>>([null]);
+  const [files, setFiles] = useState<File[]>([]);
   const [fileProgress, setFileProgress] = useState<number[]>([]);
   const [inlineError, setInlineError] = useState<string | null>(null);
 
@@ -46,15 +46,8 @@ export function RaiseDisputeModal({ isOpen, onClose, adoptionId, raisedBy }: Pro
 
   if (!isOpen) return null;
 
-  const updateFile = (index: number, f: File | null) => {
-    const next = [...files];
-    next[index] = f;
-    setFiles(next);
-  };
-
-  const addFileSlot = () => {
-    if (files.length >= MAX_FILES) return;
-    setFiles((s) => [...s, null]);
+  const updateFiles = (newFiles: File[]) => {
+    setFiles(newFiles);
   };
 
   const handleBackdropClick = () => {
@@ -69,10 +62,8 @@ export function RaiseDisputeModal({ isOpen, onClose, adoptionId, raisedBy }: Pro
       return;
     }
 
-    const selectedFiles = files.filter(Boolean) as File[];
-
     try {
-      await mutateAsync({ adoptionId, raisedBy, reason, files: selectedFiles });
+      await mutateAsync({ adoptionId, raisedBy, reason, files });
       toast.success("Dispute raised. Escrow paused.");
       onClose();
     } catch (err) {
@@ -125,40 +116,33 @@ export function RaiseDisputeModal({ isOpen, onClose, adoptionId, raisedBy }: Pro
           <label className="block text-sm font-medium text-gray-700 mb-2">
             Evidence
           </label>
-          {files.map((f, idx) => (
-            <div key={idx} className="mb-3">
-              <FileUploadZone
-                id={`evidence-${idx}`}
-                onChange={(file) => updateFile(idx, file)}
-                selectedFile={f}
-              />
-              {typeof fileProgress[idx] === "number" && (
-                <div className="mt-2">
-                  <div className="flex justify-between text-xs text-gray-600 mb-1">
-                    <span className="truncate">{f?.name ?? "Uploading..."}</span>
-                    <span className="font-semibold">{fileProgress[idx]}%</span>
-                  </div>
-                  <div className="w-full bg-gray-200 h-1.5 rounded-full">
-                    <div
-                      className="h-1.5 bg-blue-600 rounded-full"
-                      style={{ width: `${fileProgress[idx]}%` }}
-                    />
-                  </div>
+          <FileUploadZone
+            id="evidence-upload"
+            onChange={updateFiles}
+            selectedFiles={files}
+            maxFiles={MAX_FILES}
+          />
+          {files.length > 0 && (
+            <div className="mt-3 space-y-2">
+              {files.map((file, idx) => (
+                <div key={idx}>
+                  {typeof fileProgress[idx] === "number" && (
+                    <div className="mt-2">
+                      <div className="flex justify-between text-xs text-gray-600 mb-1">
+                        <span className="truncate">{file.name}</span>
+                        <span className="font-semibold">{fileProgress[idx]}%</span>
+                      </div>
+                      <div className="w-full bg-gray-200 h-1.5 rounded-full">
+                        <div
+                          className="h-1.5 bg-blue-600 rounded-full"
+                          style={{ width: `${fileProgress[idx]}%` }}
+                        />
+                      </div>
+                    </div>
+                  )}
                 </div>
-              )}
+              ))}
             </div>
-          ))}
-          {files.length < MAX_FILES && (
-            <button
-              type="button"
-              onClick={addFileSlot}
-              className="text-sm text-blue-600"
-            >
-              Add another file
-            </button>
-          )}
-          {files.length >= MAX_FILES && (
-            <p className="text-xs text-gray-400">Maximum {MAX_FILES} files reached.</p>
           )}
         </div>
 
