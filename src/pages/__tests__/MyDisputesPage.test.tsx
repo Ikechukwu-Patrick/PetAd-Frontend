@@ -63,7 +63,8 @@ function renderWithProviders() {
 describe("MyDisputesPage", () => {
   beforeEach(() => {
     server.use(
-      http.get("*/disputes", () => {
+      // Using a regex ensures it intercepts /disputes, /api/disputes, /api/disputes/me, etc.
+      http.get(/\/disputes/, () => {
         return HttpResponse.json({
           data: populatedDisputes,
         });
