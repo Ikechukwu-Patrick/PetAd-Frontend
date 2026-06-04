@@ -92,7 +92,7 @@ export default function AdoptionTimelinePage() {
                   <div className="absolute top-0 bottom-0 left-8 w-px bg-gray-200" aria-hidden="true" />
                   
                   {group.items.map((entry, index) => {
-                    const isFirstOverall = entries[0] === entry;
+                    const isFirstOverall = entries[0]?.id === entry.id;
                     
                     return (
                       <div 

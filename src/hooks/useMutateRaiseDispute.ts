@@ -1,5 +1,7 @@
-import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useApiMutation } from "./useApiMutation";
+import { useQueryClient } from "@tanstack/react-query";
 import { ApiError } from "../lib/api-errors";
+import toast from "react-hot-toast";
 
 const API_URL = import.meta.env.VITE_API_URL ?? "http://localhost:3000/api";
 
@@ -141,15 +143,22 @@ function getAuthHeader(): { Authorization?: string } {
   }
 }
 
-export const useMutateRaiseDispute = (options?: RaiseDisputeOptions) => {
+export function useMutateRaiseDispute(options?: RaiseDisputeOptions) {
   const queryClient = useQueryClient();
 
-  return useMutation({
-    mutationFn: (payload: RaiseDisputePayload) =>
-      uploadWithProgress(payload, options?.onProgress),
-    onSuccess: (_, variables) => {
-      queryClient.invalidateQueries({ queryKey: ["adoption", variables.adoptionId] });
-      queryClient.invalidateQueries({ queryKey: ["disputes"] });
-    },
-  });
-};
+  return useApiMutation<{ adoptionId: string }, RaiseDisputePayload>(
+    (payload) => uploadWithProgress(payload, options?.onProgress) as Promise<{ adoptionId: string }>,
+    {
+      invalidates: [["disputes"]],
+      onSuccess: (_data, variables) => {
+        toast.success("Dispute raised successfully");
+        queryClient.invalidateQueries({ queryKey: ["adoption", variables.adoptionId] });
+      },
+      onSettled: (_data, error) => {
+        if (error) {
+          toast.error(error.message || "Failed to raise dispute");
+        }
+      }
+    }
+  );
+}
