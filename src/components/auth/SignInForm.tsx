@@ -1,6 +1,8 @@
 import React, { useState } from "react";
 import { FormInput, PasswordInput, GoogleButton, OrDivider, SubmitButton } from "./RegisterForm";
 import { useNavigate, Link } from "react-router-dom";
+import { authService } from "../../api/authService";
+import { ApiError } from "../../lib/api-errors";
 
 interface SignInFormData {
     email: string;
@@ -56,22 +58,20 @@ export function SignInForm() {
         setIsLoading(true);
 
         try {
-            // Simulate API call
-            await new Promise((resolve) => {
-                setTimeout(() => {
-                    // You can simulate an error here to test the error state:
-                    // reject(new Error("Invalid credentials"));
-                    resolve("Success");
-                }, 1500);
+            const response = await authService.login({
+                email: formData.email.trim(),
+                password: formData.password,
             });
-            console.log("Sign in successful with:", formData.email);
-            navigate("/home"); // Redirect to homepage after successful sign in
-            // NOTE: Here you would typically redirect or dispatch a login action
+            localStorage.setItem("auth_token", response.token);
+            navigate("/home");
         } catch (err: unknown) {
-            setErrors((prev) => ({ 
-                ...prev, 
-                submit: err instanceof Error ? err.message : "Failed to sign in. Please try again." 
-            }));
+            const message =
+                err instanceof ApiError && err.status === 401
+                    ? "Invalid email or password"
+                    : err instanceof Error
+                    ? err.message
+                    : "Failed to sign in. Please try again.";
+            setErrors((prev) => ({ ...prev, submit: message }));
         } finally {
             setIsLoading(false);
         }
